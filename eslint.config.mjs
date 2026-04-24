@@ -14,11 +14,15 @@ export default defineConfig(
   ...tseslint.configs.recommended,
   ...next,
   {
+    files: ["**/*.ts", "**/*.tsx", "**/*.mts"],
     languageOptions: {
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
     },
   },
   {
@@ -42,7 +46,6 @@ export default defineConfig(
         },
       ],
       "unused-imports/no-unused-imports": "error",
-      "@typescript-eslint/no-floating-promises": "error",
       "no-restricted-imports": [
         "error",
         {
