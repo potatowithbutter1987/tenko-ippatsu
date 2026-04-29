@@ -21,7 +21,14 @@ type Errors = Partial<{
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const REQUIRED_FIELD_KEYS = ["name", "company", "vehicle", "birthDate", "phone", "email"] as const;
+const REQUIRED_FIELD_KEYS = [
+  "name",
+  "company",
+  "vehicle",
+  "birthDate",
+  "phone",
+  "email",
+] as const;
 type RequiredFieldKey = (typeof REQUIRED_FIELD_KEYS)[number];
 
 const FIELD_LABELS: Record<RequiredFieldKey, string> = {
@@ -33,7 +40,8 @@ const FIELD_LABELS: Record<RequiredFieldKey, string> = {
   email: "メールアドレス",
 };
 
-const CONSENT_REQUIRED_MESSAGE = "プライバシーポリシー・利用規約への同意が必要です";
+const CONSENT_REQUIRED_MESSAGE =
+  "プライバシーポリシー・利用規約への同意が必要です";
 
 const requiredMessage = (label: string): string => `${label}を入力してください`;
 
@@ -45,7 +53,8 @@ const validateField = (key: RequiredFieldKey, value: string): string | null => {
   return null;
 };
 
-const validateConsent = (checked: boolean): string | null => (checked ? null : CONSENT_REQUIRED_MESSAGE);
+const validateConsent = (checked: boolean): string | null =>
+  checked ? null : CONSENT_REQUIRED_MESSAGE;
 
 export const RegisterForm = () => {
   const [name, setName] = useState("");
@@ -65,8 +74,6 @@ export const RegisterForm = () => {
     phone,
     email,
   };
-
-  const isFormValid = REQUIRED_FIELD_KEYS.every((key) => validateField(key, fieldValues[key]) === null) && validateConsent(consent) === null;
 
   const updateFieldError = (key: RequiredFieldKey, value: string) => {
     setErrors((prev) => {
@@ -128,17 +135,42 @@ export const RegisterForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6 flex-1" noValidate>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-6 p-6 flex-1"
+      noValidate
+    >
       <FormField label="氏名" required error={errors.name}>
-        <TextInput placeholder="山田 太郎" value={name} onChange={(e) => setName(e.target.value)} onBlur={() => updateFieldError("name", name)} error={Boolean(errors.name)} />
+        <TextInput
+          placeholder="山田 太郎"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => updateFieldError("name", name)}
+          error={Boolean(errors.name)}
+          maxLength={50}
+        />
       </FormField>
 
       <FormField label="所属会社" required error={errors.company}>
-        <TextInput placeholder="○○運送株式会社" value={company} onChange={(e) => setCompany(e.target.value)} onBlur={() => updateFieldError("company", company)} error={Boolean(errors.company)} />
+        <TextInput
+          placeholder="○○運送株式会社"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          onBlur={() => updateFieldError("company", company)}
+          error={Boolean(errors.company)}
+          maxLength={100}
+        />
       </FormField>
 
       <FormField label="車両番号" required error={errors.vehicle}>
-        <TextInput placeholder="品川 500 あ 1234" value={vehicle} onChange={(e) => setVehicle(e.target.value)} onBlur={() => updateFieldError("vehicle", vehicle)} error={Boolean(errors.vehicle)} />
+        <TextInput
+          placeholder="品川 500 あ 1234"
+          value={vehicle}
+          onChange={(e) => setVehicle(e.target.value)}
+          onBlur={() => updateFieldError("vehicle", vehicle)}
+          error={Boolean(errors.vehicle)}
+          maxLength={20}
+        />
       </FormField>
 
       <FormField label="生年月日" required error={errors.birthDate}>
@@ -169,7 +201,15 @@ export const RegisterForm = () => {
       </FormField>
 
       <FormField label="メールアドレス" required error={errors.email}>
-        <TextInput type="email" placeholder="example@email.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => updateFieldError("email", email)} error={Boolean(errors.email)} />
+        <TextInput
+          type="email"
+          placeholder="example@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => updateFieldError("email", email)}
+          error={Boolean(errors.email)}
+          maxLength={254}
+        />
       </FormField>
 
       <div className="flex flex-col gap-1">
@@ -182,21 +222,29 @@ export const RegisterForm = () => {
           }}
           error={Boolean(errors.consent)}
         >
-          <Link href="/policy/privacy" onClick={(e) => e.stopPropagation()} className="text-[#163300] underline">
+          <Link
+            href="/policy/privacy"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[#163300] underline"
+          >
             プライバシーポリシー
           </Link>
           <span className="text-[#0e0f0c]">・</span>
-          <Link href="/policy/terms" onClick={(e) => e.stopPropagation()} className="text-[#163300] underline">
+          <Link
+            href="/policy/terms"
+            onClick={(e) => e.stopPropagation()}
+            className="text-[#163300] underline"
+          >
             利用規約
           </Link>
           <span className="text-[#0e0f0c]">に同意する</span>
         </Checkbox>
-        {errors.consent ? <p className="text-[12px] text-[#e23b4a]">{errors.consent}</p> : null}
+        {errors.consent ? (
+          <p className="text-[12px] text-[#e23b4a]">{errors.consent}</p>
+        ) : null}
       </div>
 
-      <PrimaryButton type="submit" disabled={!isFormValid}>
-        登録する
-      </PrimaryButton>
+      <PrimaryButton type="submit">登録する</PrimaryButton>
     </form>
   );
 };

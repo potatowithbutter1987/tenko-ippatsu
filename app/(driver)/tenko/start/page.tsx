@@ -1,7 +1,13 @@
+import { StartTenkoForm } from "@/app/(driver)/tenko/start/StartTenkoForm";
+import { AppHeader } from "@/components/layout/AppHeader";
+
 export default function TenkoStartPage() {
   return (
-    <main className="p-6">
-      <h1 className="text-xl font-semibold">D-003 乗務前点呼</h1>
-    </main>
+    <div className="w-full bg-white flex flex-col">
+      <AppHeader title="開始点呼（出発）" />
+      <div className="w-full max-w-[765px] mx-auto flex flex-col">
+        <StartTenkoForm />
+      </div>
+    </div>
   );
 }

@@ -36,6 +36,49 @@
 - 高さは HUG（`padding + content`）。`h-[45px]` のようなハードコードは禁止
 - エラー状態は `border` 切り替えのみ。メッセージ表示は親 `FormField` 側で行う
 
+## クリック可能要素の hover / cursor 規約
+
+`<button>` または `role="button"` を持つ要素は、押せることが視覚的に伝わるよう **すべて** 以下を満たす:
+
+1. `cursor-pointer` を付与してマウスカーソルを手のマークに
+2. `transition-colors` で色変化をなめらかに
+3. `hover:bg-[...]` で背景色を**わずかに**変える
+4. `disabled` 状態では `cursor-not-allowed` に切り替え、hover を効かせない（`enabled:hover:bg-[...]` を使う）
+
+### hover 色の選び方
+
+| 通常時の背景            | hover 時の背景             |
+| ----------------------- | -------------------------- |
+| `#9fe870`（Wise Green） | `#8edc5e`（少し濃い緑）    |
+| `#e2f6d5`（Light Mint） | `#d4ebc6`（少し濃い mint） |
+| `#ffffff`（白）         | `#f7f7f5`（Surface）       |
+
+design-system.md にないトーンを新規に作らない。上記マッピングで揃える。
+
+### 例
+
+```tsx
+// PrimaryButton（disabled あり）
+className =
+  "bg-[#9fe870] cursor-pointer transition-colors enabled:hover:bg-[#8edc5e] disabled:bg-[#e8ebe6] disabled:cursor-not-allowed";
+
+// SelectInput / DatePicker のトリガ（白カード）
+className = "bg-white hover:bg-[#f7f7f5] cursor-pointer transition-colors";
+
+// SegmentedToggle / InspectionItem の active セグメント
+className = "bg-[#9fe870] hover:bg-[#8edc5e] cursor-pointer transition-colors";
+
+// CheckCard（チェック済み）
+className = "bg-[#e2f6d5] hover:bg-[#d4ebc6] cursor-pointer transition-colors";
+```
+
+### アンチパターン
+
+- ネイティブ `<button>` のデフォルトカーソルに任せる（ブラウザ差異あり、`cursor-pointer` を明示する）
+- hover を付けない（押せるのか不安になる）
+- `transition-colors` を省略してパッと色が変わる（ジャンプ感が出る）
+- `disabled` 時にも hover が効く（押せないのに反応するように見える）
+
 ## ドメインコンポーネントのルール
 
 - プリミティブ UI と組み合わせて、ドメイン語彙の API を提供する

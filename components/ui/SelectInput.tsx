@@ -36,7 +36,7 @@ export const SelectInput = ({
       <button
         type="button"
         onClick={onClick}
-        className={`w-full bg-white border ${borderClass} rounded-[10px] px-4 py-[14px] flex items-center justify-between`}
+        className={`w-full bg-white hover:bg-[#f7f7f5] border ${borderClass} rounded-[10px] px-4 py-[14px] flex items-center justify-between cursor-pointer transition-colors`}
       >
         <span className="text-[14px] text-[#bfbfbf]">{placeholder}</span>
         <span className="text-[12px] text-[#868685]">▼</span>

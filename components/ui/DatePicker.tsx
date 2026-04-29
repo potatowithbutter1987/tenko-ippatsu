@@ -67,7 +67,7 @@ export const DatePicker = ({
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`w-full bg-white border ${borderClass} rounded-[10px] px-4 py-[14px] flex items-center justify-between outline-none cursor-pointer`}
+        className={`w-full bg-white hover:bg-[#f7f7f5] border ${borderClass} rounded-[10px] px-4 py-[14px] flex items-center justify-between outline-none cursor-pointer transition-colors`}
       >
         <span
           className={`text-[14px] ${isPlaceholder ? "text-[#bfbfbf]" : "text-[#0e0f0c]"}`}

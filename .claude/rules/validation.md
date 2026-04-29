@@ -6,10 +6,12 @@
 
 1. **検証ロジックはモジュールスコープの純粋関数に置く**（コンポーネント外）
 2. **トリガはフィールド種別で使い分ける**:
-   - テキスト入力 → `onBlur`
-   - 選択 UI（`DatePicker`、`Checkbox` 等） → `onChange`
-   - 送信時 → 全フィールド一括
-3. **送信ボタンは `isFormValid` で活性制御**し、無効入力では押せないようにする
+   - テキスト入力 → `onBlur`（任意）
+   - 選択 UI（`DatePicker`、`Checkbox` 等） → `onChange`（任意）
+   - 送信時 → 全フィールド一括（**必須**）
+3. **送信ボタンは常時活性化**する。`disabled` で未入力時に押せなくしない
+   - 理由: disabled だと「何を埋めれば送信できるか」が分からず、ユーザーが詰む
+   - submit クリック → `validateForm` → エラーを各フィールドに表示、で十分なフィードバックになる
 4. エラー文言は宣言的に一元管理する
 
 ## 実装パターン
@@ -78,38 +80,54 @@ const updateFieldError = (key: RequiredFieldKey, value: string) => {
 
 選択 UI は値が変わる瞬間が「ユーザーの確定操作」なので、blur ではなく change で検証する。
 
-### 4. 送信ボタン活性制御
+### 4. 送信ボタン
 
-```ts
-const fieldValues: Record<RequiredFieldKey, string> = {
-  name, company, vehicle, birthDate, phone, email,
-};
-
-const isFormValid =
-  REQUIRED_FIELD_KEYS.every(
-    (key) => validateField(key, fieldValues[key]) === null,
-  ) && validateConsent(consent) === null;
-
-<PrimaryButton type="submit" disabled={!isFormValid}>登録する</PrimaryButton>
+```tsx
+<PrimaryButton type="submit">登録する</PrimaryButton>
 ```
 
-- レンダー時に都度計算（`useState` で持たない）
-- 全フィールドの `validate*` が `null` を返したときのみ活性
+- `disabled` を付けない。常に押せる
+- 押すと `handleSubmit` が走り、`validateForm` で全フィールドを検証
+- 未入力フィールドはエラー表示（赤ボーダー + メッセージ）に切り替わるので、ユーザーは何を埋めるべきか即座に把握できる
 
-### 5. 送信時の安全網
+### 5. 送信時のバリデーション
 
 ```ts
 const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
-  const fieldErrors = REQUIRED_FIELD_KEYS.reduce<Errors>((acc, key) => {
-    const error = validateField(key, fieldValues[key]);
-    return error === null ? acc : { ...acc, [key]: error };
-  }, {});
-  // ... 同期的に全フィールドを再検証して setErrors
+
+  const nextErrors = validateForm(formState);
+
+  if (Object.keys(nextErrors).length > 0) {
+    setErrors(nextErrors);
+    return;
+  }
+
+  setErrors({});
+  // 送信処理
 };
 ```
 
-ボタンが disabled でも、何らかの経路（Enter キー等）で submit が走った場合の防御として必ず残す。
+`validateForm` はフィールドごとの validator を集約する純粋関数:
+
+```ts
+const VALIDATORS: ReadonlyArray<{
+  key: keyof Errors;
+  validate: (s: FormState) => string | null;
+}> = [
+  { key: "inspector", validate: validateInspector },
+  { key: "method", validate: validateMethod },
+  // ...
+];
+
+const validateForm = (s: FormState): Errors =>
+  VALIDATORS.reduce<Errors>((acc, { key, validate }) => {
+    const error = validate(s);
+    return error === null ? acc : { ...acc, [key]: error };
+  }, {});
+```
+
+**フィールドが多いフォーム**ではこのデータ駆動パターン（`VALIDATORS` 配列 + reduce）を推奨。複雑度（cyclomatic complexity）も抑えられる。
 
 ## DB スキーマとの整合
 
@@ -127,14 +145,14 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 
 ## アンチパターン
 
+- **送信ボタンを未入力時に `disabled` にする**
+  → 何を埋めれば押せるようになるか分からずユーザーが詰む。常に活性化し、submit 時にエラーを表示すること
 - フィールドごとにバラバラのバリデーション関数を書く（`validateName`, `validateEmail`, ...）
-  → `validateField(key, value)` に集約する
+  → 小さなフォームなら `validateField(key, value)` に集約。フィールドが多いフォームは `VALIDATORS` 配列 + reduce
 - onChange のたびにテキスト入力を検証する（うるさいフィードバック）
   → blur で一度、必要に応じてエラー時のみ change で再評価する
-- `isFormValid` を `useState` で管理する
-  → state ↔ values 同期のバグの温床。**レンダー時計算**にする
-- 送信時のみ検証してエラー一括表示
-  → ユーザーがどのフィールドの問題か把握しづらい。blur / change で逐次出す
+- 送信時のみ検証してエラー一括表示しつつ、何も他のフィードバックがない
+  → 大きなフォームなら submit 時の per-field エラー表示で十分。小さなフォームなら blur / change の逐次フィードバックも追加
 - エラー文言を JSX 内にハードコード
   → `validateField` 内（または定数）に集約する
 - フロント検証だけで安心してサーバ検証を省く
