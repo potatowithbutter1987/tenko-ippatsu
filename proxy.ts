@@ -35,16 +35,48 @@ const isAuthorized = (request: NextRequest): boolean => {
   return credentials.user === expectedUser && credentials.password === expectedPassword;
 };
 
-export function proxy(request: NextRequest) {
-  if (!isDevelopEnv()) return NextResponse.next();
-  if (isAuthorized(request)) return NextResponse.next();
+const requiresAdminAuth = (pathname: string): boolean =>
+  pathname.startsWith("/admin") && pathname !== "/admin/login";
 
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": `Basic realm="${REALM}", charset="UTF-8"`,
-    },
-  });
+const requiresLiffContext = (pathname: string): boolean =>
+  pathname.startsWith("/driver");
+
+// 各検証関数は方向性のみ確定済み。実装方式（cookie 名 / LINE OAuth or LIFF / 検証ヘッダ）が
+// 未確定のため、現時点では pass-through。実装は別タスクで詰める。
+
+// TODO(admin-auth): 管理者セッション cookie の検証
+const hasAdminSession = (_request: NextRequest): boolean => true;
+
+// TODO(line-auth): 管理者向け LINE 認証の検証
+const hasLineAuth = (_request: NextRequest): boolean => true;
+
+// TODO(liff-context): LIFF 経由アクセスの検証
+const hasLiffContext = (_request: NextRequest): boolean => true;
+
+export function proxy(request: NextRequest) {
+  if (isDevelopEnv() && !isAuthorized(request)) {
+    return new NextResponse("Authentication required.", {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": `Basic realm="${REALM}", charset="UTF-8"`,
+      },
+    });
+  }
+
+  const { pathname } = request.nextUrl;
+
+  if (
+    requiresAdminAuth(pathname) &&
+    (!hasAdminSession(request) || !hasLineAuth(request))
+  ) {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
+
+  if (requiresLiffContext(pathname) && !hasLiffContext(request)) {
+    return new NextResponse("LIFF access required.", { status: 403 });
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

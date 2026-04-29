@@ -1,12 +1,12 @@
-import { EndTenkoForm } from "@/app/(driver)/tenko/end/EndTenkoForm";
+import { StartTenkoForm } from "@/app/driver/tenko/start/StartTenkoForm";
 import { AppHeader } from "@/components/layout/AppHeader";
 
-export default function TenkoEndPage() {
+export default function TenkoStartPage() {
   return (
     <div className="w-full bg-white flex flex-col">
-      <AppHeader title="終了点呼（帰着）" />
+      <AppHeader title="開始点呼（出発）" />
       <div className="w-full max-w-[765px] mx-auto flex flex-col">
-        <EndTenkoForm />
+        <StartTenkoForm />
       </div>
     </div>
   );

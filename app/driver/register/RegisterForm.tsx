@@ -223,7 +223,7 @@ export const RegisterForm = () => {
           error={Boolean(errors.consent)}
         >
           <Link
-            href="/policy/privacy"
+            href="/driver/policy/privacy"
             onClick={(e) => e.stopPropagation()}
             className="text-[#163300] underline"
           >
@@ -231,7 +231,7 @@ export const RegisterForm = () => {
           </Link>
           <span className="text-[#0e0f0c]">・</span>
           <Link
-            href="/policy/terms"
+            href="/driver/policy/terms"
             onClick={(e) => e.stopPropagation()}
             className="text-[#163300] underline"
           >

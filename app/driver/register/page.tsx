@@ -1,4 +1,4 @@
-import { RegisterForm } from "@/app/(driver)/register/RegisterForm";
+import { RegisterForm } from "@/app/driver/register/RegisterForm";
 import { AppHeader } from "@/components/layout/AppHeader";
 
 export default function RegisterPage() {

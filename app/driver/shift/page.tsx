@@ -1,4 +1,4 @@
-import { ShiftRegisterPage } from "@/app/(driver)/shift/ShiftRegisterPage";
+import { ShiftRegisterPage } from "@/app/driver/shift/ShiftRegisterPage";
 import { AppHeader } from "@/components/layout/AppHeader";
 
 export default function ShiftPage() {

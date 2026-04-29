@@ -5,8 +5,8 @@
 ```
 tenko-ippatsu/
 ├── app/                           Next.js App Router
-│   ├── (admin)/                   管理者向けルートグループ
-│   ├── (driver)/                  ドライバー向けルートグループ
+│   ├── admin/                     管理者向け（/admin/*）
+│   ├── driver/                    ドライバー向け（/driver/*、LIFF経由必須）
 │   ├── api/                       Route Handlers
 │   ├── layout.tsx                 ルートレイアウト
 │   └── page.tsx
@@ -39,7 +39,7 @@ tenko-ippatsu/
 ### `app/`（Next.js）
 
 - ルーティング、ページレンダリング、レイアウトのみ
-- ページ固有のクライアントコンポーネントは同一ディレクトリに同居（例: `app/(driver)/register/RegisterForm.tsx`）
+- ページ固有のクライアントコンポーネントは同一ディレクトリに同居（例: `app/driver/register/RegisterForm.tsx`）
 - `page.tsx` は原則 **Server Component**。インタラクションがある場合のみ、フォーム単位で `"use client"` を切り出す
 
 ### `app/api/`（Route Handlers）
@@ -99,11 +99,14 @@ tenko-ippatsu/
 - Route Handler では `AppError` をステータスコードに変換して返す
 - クライアントは `try/catch` で `HttpError` を捕捉し、UI に反映
 
-## ルートグループ
+## URL 構造とロール別ガード
 
-- `(admin)` — 管理者画面（M-XXX）
-- `(driver)` — ドライバー画面（D-XXX）
-- ルートグループは URL に現れない。レイアウトと middleware でロール別アクセス制御を行う
+- `/admin/*` — 管理者画面（M-XXX）
+  - `/admin/login` のみ未認証でアクセス可
+  - それ以外は管理者セッション + LINE 認証を要求
+- `/driver/*` — ドライバー画面（D-XXX）
+  - 全ページ LIFF（LINE Front-end Framework）経由のアクセスを要求
+- ロール別アクセス制御は `proxy.ts`（Next.js 16 で `middleware.ts` から rename）で行う
 
 ## ID と日時
 
