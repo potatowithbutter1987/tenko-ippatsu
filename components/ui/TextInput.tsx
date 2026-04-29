@@ -10,7 +10,7 @@ const toHalfWidthDigits = (value: string): string =>
   );
 
 const cleanNumeric = (value: string): string =>
-  toHalfWidthDigits(value).replace(/[^0-9]/g, "");
+  toHalfWidthDigits(value).replace(/[^0-9.]/g, "");
 
 const cleanDecimal = (value: string): string => {
   const halfWidth = toHalfWidthDigits(value).replace(/[^0-9.]/g, "");

@@ -97,7 +97,28 @@ export const DatePicker = ({
             endMonth={new Date(endYear, 11)}
             defaultMonth={selectedDate ?? new Date(endYear - 30, 0)}
             locale={ja}
+            modifiers={{
+              sunday: (date) => date.getDay() === 0,
+              saturday: (date) => date.getDay() === 6,
+            }}
+            modifiersClassNames={{
+              sunday: "rdp-weekend-sun",
+              saturday: "rdp-weekend-sat",
+            }}
           />
+          <style>{`
+            .rdp-weekend-sun:not(.rdp-selected) { color: #e23b4a; }
+            .rdp-weekend-sat:not(.rdp-selected) { color: #3b82f6; }
+            .rdp-weekday:first-child { color: #e23b4a; }
+            .rdp-weekday:last-child { color: #3b82f6; }
+            .rdp-nav button { color: #868685; }
+            .rdp-chevron { fill: #868685; }
+            .rdp-selected .rdp-day_button {
+              background-color: #9fe870;
+              color: #163300;
+              border-color: #9fe870;
+            }
+          `}</style>
         </div>
       ) : null}
     </div>

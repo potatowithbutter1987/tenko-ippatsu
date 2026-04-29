@@ -2,26 +2,18 @@
 
 import { useState } from "react";
 
-import { CheckCard } from "@/components/ui/CheckCard";
 import { FormField } from "@/components/ui/FormField";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SegmentedToggle } from "@/components/ui/SegmentedToggle";
 import { SelectInput } from "@/components/ui/SelectInput";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextInput } from "@/components/ui/TextInput";
-import type { InspectionResultValue } from "@/features/tenko/components/InspectionItem";
-import {
-  ALL_INSPECTION_KEYS,
-  VehicleInspectionPanel,
-  type InspectionKey,
-  type InspectionResult,
-} from "@/features/tenko/components/VehicleInspectionPanel";
 
 type InspectorType = "self" | "other";
 type InspectionMethod = "facetoface" | "other";
-type YesNo = "yes" | "no";
-type CheckResult = "normal" | "abnormal";
 type AlcoholUsed = "used" | "not_used";
+type CheckResult = "normal" | "abnormal";
+type ReportPresence = "none" | "other";
 
 const INSPECTOR_OPTIONS = [
   { value: "self" as const, label: "自分" },
@@ -33,9 +25,9 @@ const METHOD_OPTIONS = [
   { value: "other" as const, label: "その他" },
 ];
 
-const YESNO_OPTIONS = [
-  { value: "yes" as const, label: "はい" },
-  { value: "no" as const, label: "いいえ" },
+const ALCOHOL_USED_OPTIONS = [
+  { value: "used" as const, label: "使用した" },
+  { value: "not_used" as const, label: "使用していない" },
 ];
 
 const CHECK_RESULT_OPTIONS = [
@@ -43,9 +35,15 @@ const CHECK_RESULT_OPTIONS = [
   { value: "abnormal" as const, label: "異常あり" },
 ];
 
-const ALCOHOL_USED_OPTIONS = [
-  { value: "used" as const, label: "使用した" },
-  { value: "not_used" as const, label: "使用していない" },
+const REPORT_PRESENCE_OPTIONS = [
+  { value: "none" as const, label: "特になし" },
+  { value: "other" as const, label: "その他" },
+];
+
+const REST_LOCATION_OPTIONS = [
+  { value: "rest-1", label: "○○PA" },
+  { value: "rest-2", label: "○○SA" },
+  { value: "rest-other", label: "その他" },
 ];
 
 const VEHICLE_OPTIONS = [
@@ -58,31 +56,34 @@ type FormState = {
   inspectorName: string;
   inspectionMethod: InspectionMethod | null;
   inspectionMethodNote: string;
-  licenseConfirmed: boolean;
-  healthOk: YesNo | null;
-  vehicleCheck: CheckResult | null;
-  inspectionResult: InspectionResult;
   alcoholUsed: AlcoholUsed | null;
   alcoholStatus: CheckResult | null;
   alcoholValue: string;
-  odometer: string;
+  endOdometer: string;
+  statusReport: ReportPresence | null;
+  statusReportNote: string;
+  handover: ReportPresence | null;
+  handoverNote: string;
+  restLocation: string;
   vehicleId: string;
 };
 
 type Errors = Partial<{
   inspector: string;
   method: string;
-  license: string;
-  health: string;
-  vehicleCheck: string;
   alcoholUsed: string;
   alcoholStatus: string;
   alcoholValue: string;
-  odometer: string;
+  endOdometer: string;
+  statusReport: string;
+  handover: string;
+  restLocation: string;
   vehicleId: string;
 }>;
 
 const SELECT_REQUIRED = "選択してください";
+const ALCOHOL_VALUE_PATTERN = /^\d(\.\d{1,2})?$/;
+const ODOMETER_PATTERN = /^\d+$/;
 
 const validateInspector = (
   type: InspectorType | null,
@@ -106,31 +107,11 @@ const validateMethod = (
   return null;
 };
 
-const validateLicense = (s: FormState): string | null =>
-  s.licenseConfirmed ? null : "免許証の携帯を確認してください";
-
-const validateHealth = (s: FormState): string | null =>
-  s.healthOk === null ? SELECT_REQUIRED : null;
-
-const validateVehicleCheck = (s: FormState): string | null => {
-  if (s.vehicleCheck === null) return SELECT_REQUIRED;
-  if (
-    s.vehicleCheck === "abnormal" &&
-    !ALL_INSPECTION_KEYS.every((k) => s.inspectionResult[k] !== undefined)
-  ) {
-    return "すべての点検項目を選択してください";
-  }
-  return null;
-};
-
 const validateAlcoholUsed = (s: FormState): string | null =>
   s.alcoholUsed === null ? SELECT_REQUIRED : null;
 
 const validateAlcoholStatus = (s: FormState): string | null =>
   s.alcoholStatus === null ? SELECT_REQUIRED : null;
-
-const ALCOHOL_VALUE_PATTERN = /^\d(\.\d{1,2})?$/;
-const ODOMETER_PATTERN = /^\d+$/;
 
 const validateAlcoholValue = (value: string): string | null => {
   const trimmed = value.trim();
@@ -148,8 +129,33 @@ const validateOdometerValue = (value: string): string | null => {
   return null;
 };
 
-const validateOdometer = (s: FormState): string | null =>
-  validateOdometerValue(s.odometer);
+const validateEndOdometer = (s: FormState): string | null =>
+  validateOdometerValue(s.endOdometer);
+
+const validateStatusReport = (
+  presence: ReportPresence | null,
+  note: string,
+): string | null => {
+  if (presence === null) return SELECT_REQUIRED;
+  if (presence === "other" && note.trim() === "") {
+    return "報告事項を入力してください";
+  }
+  return null;
+};
+
+const validateHandover = (
+  presence: ReportPresence | null,
+  note: string,
+): string | null => {
+  if (presence === null) return SELECT_REQUIRED;
+  if (presence === "other" && note.trim() === "") {
+    return "通告内容を入力してください";
+  }
+  return null;
+};
+
+const validateRestLocation = (s: FormState): string | null =>
+  s.restLocation === "" ? "休憩場所を選択してください" : null;
 
 const validateVehicleId = (s: FormState): string | null =>
   s.vehicleId === "" ? "車両を選択してください" : null;
@@ -166,16 +172,22 @@ const VALIDATORS: ReadonlyArray<{
     key: "method",
     validate: (s) => validateMethod(s.inspectionMethod, s.inspectionMethodNote),
   },
-  { key: "license", validate: validateLicense },
-  { key: "health", validate: validateHealth },
-  { key: "vehicleCheck", validate: validateVehicleCheck },
   { key: "alcoholUsed", validate: validateAlcoholUsed },
   { key: "alcoholStatus", validate: validateAlcoholStatus },
   {
     key: "alcoholValue",
     validate: (s) => validateAlcoholValue(s.alcoholValue),
   },
-  { key: "odometer", validate: validateOdometer },
+  { key: "endOdometer", validate: validateEndOdometer },
+  {
+    key: "statusReport",
+    validate: (s) => validateStatusReport(s.statusReport, s.statusReportNote),
+  },
+  {
+    key: "handover",
+    validate: (s) => validateHandover(s.handover, s.handoverNote),
+  },
+  { key: "restLocation", validate: validateRestLocation },
   { key: "vehicleId", validate: validateVehicleId },
 ];
 
@@ -185,7 +197,12 @@ const validateForm = (s: FormState): Errors =>
     return error === null ? acc : { ...acc, [key]: error };
   }, {});
 
-export const StartTenkoForm = () => {
+const showError = (
+  errorMessage: string | undefined,
+  isApplicable: boolean,
+): boolean => errorMessage !== undefined && isApplicable;
+
+export const EndTenkoForm = () => {
   const [inspectorType, setInspectorType] = useState<InspectorType | null>(
     null,
   );
@@ -195,38 +212,26 @@ export const StartTenkoForm = () => {
     useState<InspectionMethod | null>(null);
   const [inspectionMethodNote, setInspectionMethodNote] = useState("");
 
-  const [licenseConfirmed, setLicenseConfirmed] = useState(false);
-
-  const [healthOk, setHealthOk] = useState<YesNo | null>(null);
-
-  const [vehicleCheck, setVehicleCheck] = useState<CheckResult | null>(null);
-  const [inspectionResult, setInspectionResult] = useState<InspectionResult>(
-    {},
-  );
-
   const [alcoholUsed, setAlcoholUsed] = useState<AlcoholUsed | null>(null);
 
   const [alcoholStatus, setAlcoholStatus] = useState<CheckResult | null>(null);
   const [alcoholValue, setAlcoholValue] = useState("");
 
-  const [odometer, setOdometer] = useState("");
+  const [endOdometer, setEndOdometer] = useState("");
+
+  const [statusReport, setStatusReport] = useState<ReportPresence | null>(null);
+  const [statusReportNote, setStatusReportNote] = useState("");
+
+  const [handover, setHandover] = useState<ReportPresence | null>(null);
+  const [handoverNote, setHandoverNote] = useState("");
+
+  const [restLocation, setRestLocation] = useState("");
 
   const [vehicleId, setVehicleId] = useState("");
 
   const [message, setMessage] = useState("");
 
   const [errors, setErrors] = useState<Errors>({});
-
-  const handleInspectionChange = (
-    key: InspectionKey,
-    result: InspectionResultValue,
-  ) => {
-    const next = { ...inspectionResult, [key]: result };
-    setInspectionResult(next);
-    if (ALL_INSPECTION_KEYS.every((k) => next[k] !== undefined)) {
-      clearError("vehicleCheck");
-    }
-  };
 
   const clearError = (key: keyof Errors) => {
     setErrors((prev) => {
@@ -258,14 +263,15 @@ export const StartTenkoForm = () => {
       inspectorName,
       inspectionMethod,
       inspectionMethodNote,
-      licenseConfirmed,
-      healthOk,
-      vehicleCheck,
-      inspectionResult,
       alcoholUsed,
       alcoholStatus,
       alcoholValue,
-      odometer,
+      endOdometer,
+      statusReport,
+      statusReportNote,
+      handover,
+      handoverNote,
+      restLocation,
       vehicleId,
     };
 
@@ -278,12 +284,13 @@ export const StartTenkoForm = () => {
 
     setErrors({});
     // TODO: API 送信
-    console.log("submit start tenko", {
+    console.log("submit end tenko", {
       ...formState,
       inspectorName: inspectorType === "other" ? inspectorName : null,
       inspectionMethodNote:
         inspectionMethod === "other" ? inspectionMethodNote : null,
-      inspectionResult: vehicleCheck === "abnormal" ? inspectionResult : null,
+      statusReportNote: statusReport === "other" ? statusReportNote : null,
+      handoverNote: handover === "other" ? handoverNote : null,
       message,
     });
   };
@@ -304,7 +311,7 @@ export const StartTenkoForm = () => {
               clearError("inspector");
             }}
             options={INSPECTOR_OPTIONS}
-            error={Boolean(errors.inspector) && inspectorType === null}
+            error={showError(errors.inspector, inspectorType === null)}
           />
           {inspectorType === "other" ? (
             <TextInput
@@ -316,7 +323,7 @@ export const StartTenkoForm = () => {
                   validateInspector(inspectorType, inspectorName),
                 )
               }
-              error={Boolean(errors.inspector) && inspectorType === "other"}
+              error={showError(errors.inspector, inspectorType === "other")}
               maxLength={50}
             />
           ) : null}
@@ -333,7 +340,7 @@ export const StartTenkoForm = () => {
               clearError("method");
             }}
             options={METHOD_OPTIONS}
-            error={Boolean(errors.method) && inspectionMethod === null}
+            error={showError(errors.method, inspectionMethod === null)}
           />
           <p className="text-[12px] text-[#888986]">
             電話・Web・スマホアプリなど
@@ -348,69 +355,8 @@ export const StartTenkoForm = () => {
                   validateMethod(inspectionMethod, inspectionMethodNote),
                 )
               }
-              error={Boolean(errors.method) && inspectionMethod === "other"}
+              error={showError(errors.method, inspectionMethod === "other")}
               maxLength={200}
-            />
-          ) : null}
-        </div>
-      </FormField>
-
-      <FormField label="免許証の携帯確認" required error={errors.license}>
-        <div className="flex flex-col gap-[10px] w-full">
-          <p className="text-[12px] leading-[18px] text-[#888986]">
-            運転する際、法律において免許は携帯を義務付けられています。また、事故が発生した場合は、免許不携帯となります。今一度、業務開始前に免許証を携帯しているか確認して下さい。
-          </p>
-          <CheckCard
-            checked={licenseConfirmed}
-            onChange={(checked) => {
-              setLicenseConfirmed(checked);
-              if (checked) clearError("license");
-            }}
-            error={Boolean(errors.license)}
-          >
-            確かに携帯していることを確認した
-          </CheckCard>
-        </div>
-      </FormField>
-
-      <FormField label="体調・疲労状況" required error={errors.health}>
-        <div className="flex flex-col gap-[10px] w-full">
-          <p className="text-[12px] leading-[18px] text-[#888986]">
-            業務に支障が無いか、正確に判断する必要があります。
-          </p>
-          <SegmentedToggle
-            value={healthOk}
-            onChange={(v) => {
-              setHealthOk(v);
-              clearError("health");
-            }}
-            options={YESNO_OPTIONS}
-            error={Boolean(errors.health)}
-          />
-        </div>
-      </FormField>
-
-      <FormField
-        label="車両点検の実施と状況報告"
-        required
-        error={errors.vehicleCheck}
-      >
-        <div className="flex flex-col gap-[10px] w-full">
-          <SegmentedToggle
-            value={vehicleCheck}
-            onChange={(v) => {
-              setVehicleCheck(v);
-              setInspectionResult({});
-              clearError("vehicleCheck");
-            }}
-            options={CHECK_RESULT_OPTIONS}
-            error={Boolean(errors.vehicleCheck) && vehicleCheck === null}
-          />
-          {vehicleCheck === "abnormal" ? (
-            <VehicleInspectionPanel
-              value={inspectionResult}
-              onChange={handleInspectionChange}
-              errorOnUnselected={Boolean(errors.vehicleCheck)}
             />
           ) : null}
         </div>
@@ -433,20 +379,15 @@ export const StartTenkoForm = () => {
       </FormField>
 
       <FormField label="酒気帯びの有無" required error={errors.alcoholStatus}>
-        <div className="flex flex-col gap-[10px] w-full">
-          <p className="text-[12px] leading-[18px] text-[#888986]">
-            酒気数値を入力してください
-          </p>
-          <SegmentedToggle
-            value={alcoholStatus}
-            onChange={(v) => {
-              setAlcoholStatus(v);
-              clearError("alcoholStatus");
-            }}
-            options={CHECK_RESULT_OPTIONS}
-            error={Boolean(errors.alcoholStatus)}
-          />
-        </div>
+        <SegmentedToggle
+          value={alcoholStatus}
+          onChange={(v) => {
+            setAlcoholStatus(v);
+            clearError("alcoholStatus");
+          }}
+          options={CHECK_RESULT_OPTIONS}
+          error={Boolean(errors.alcoholStatus)}
+        />
       </FormField>
 
       <FormField label="検知数値" required error={errors.alcoholValue}>
@@ -469,18 +410,99 @@ export const StartTenkoForm = () => {
         </div>
       </FormField>
 
-      <FormField label="開始ODDメーター" required error={errors.odometer}>
+      <FormField label="終了時ODOメーター" required error={errors.endOdometer}>
         <TextInput
           type="text"
           inputMode="numeric"
           placeholder="数値を入力"
-          value={odometer}
-          onChange={(e) => setOdometer(e.target.value)}
+          value={endOdometer}
+          onChange={(e) => setEndOdometer(e.target.value)}
           onBlur={() =>
-            updateError("odometer", () => validateOdometerValue(odometer))
+            updateError("endOdometer", () => validateOdometerValue(endOdometer))
           }
-          error={Boolean(errors.odometer)}
+          error={Boolean(errors.endOdometer)}
           maxLength={7}
+        />
+      </FormField>
+
+      <FormField
+        label="自動車・道路及び運行の状況について報告事項がありますか？"
+        required
+        error={errors.statusReport}
+      >
+        <div className="flex flex-col gap-[10px] w-full">
+          <SegmentedToggle
+            value={statusReport}
+            onChange={(v) => {
+              setStatusReport(v);
+              setStatusReportNote("");
+              clearError("statusReport");
+            }}
+            options={REPORT_PRESENCE_OPTIONS}
+            error={showError(errors.statusReport, statusReport === null)}
+          />
+          {statusReport === "other" ? (
+            <TextArea
+              className="min-h-[100px]"
+              placeholder="報告事項を入力してください"
+              value={statusReportNote}
+              onChange={(e) => setStatusReportNote(e.target.value)}
+              onBlur={() =>
+                updateError("statusReport", () =>
+                  validateStatusReport(statusReport, statusReportNote),
+                )
+              }
+              error={showError(errors.statusReport, statusReport === "other")}
+              maxLength={500}
+            />
+          ) : null}
+        </div>
+      </FormField>
+
+      <FormField
+        label="交替運転者に対する通告はありますか？"
+        required
+        error={errors.handover}
+      >
+        <div className="flex flex-col gap-[10px] w-full">
+          <SegmentedToggle
+            value={handover}
+            onChange={(v) => {
+              setHandover(v);
+              setHandoverNote("");
+              clearError("handover");
+            }}
+            options={REPORT_PRESENCE_OPTIONS}
+            error={showError(errors.handover, handover === null)}
+          />
+          {handover === "other" ? (
+            <TextArea
+              className="min-h-[100px]"
+              placeholder="通告内容を入力してください"
+              value={handoverNote}
+              onChange={(e) => setHandoverNote(e.target.value)}
+              onBlur={() =>
+                updateError("handover", () =>
+                  validateHandover(handover, handoverNote),
+                )
+              }
+              error={showError(errors.handover, handover === "other")}
+              maxLength={500}
+            />
+          ) : null}
+        </div>
+      </FormField>
+
+      <FormField label="休憩場所" required error={errors.restLocation}>
+        <SelectInput
+          placeholder="休憩場所を選択"
+          value={restLocation}
+          onChange={(v) => {
+            setRestLocation(v);
+            if (v !== "") clearError("restLocation");
+          }}
+          options={REST_LOCATION_OPTIONS}
+          error={Boolean(errors.restLocation)}
         />
       </FormField>
 
