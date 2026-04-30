@@ -181,7 +181,7 @@ const MonthNav = ({
           {format(month, "yyyy年 M月", { locale: ja })}度
         </p>
         <p className="text-[11px] font-normal text-[#868685]">
-          基準日 {format(startOfMonth(month), "M/d")} –{" "}
+          {format(startOfMonth(month), "M/d")} –{" "}
           {format(endOfMonth(month), "M/d")}
         </p>
       </div>

@@ -6,14 +6,22 @@ import { flushSync } from "react-dom";
 const TRANSITION_DURATION_MS = 200;
 const TRANSITION_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
 
+type ConfirmVariant = "primary" | "danger";
+
 type Props = {
   open: boolean;
   title?: string;
   message: string;
   cancelLabel?: string;
   confirmLabel?: string;
+  variant?: ConfirmVariant;
   onCancel: () => void;
   onConfirm: () => void;
+};
+
+const CONFIRM_BUTTON_CLASS: Record<ConfirmVariant, string> = {
+  primary: "bg-[#9fe870] text-[#163300] hover:bg-[#8edc5e]",
+  danger: "bg-[#e23b4a] text-white hover:bg-[#c93242]",
 };
 
 export const ConfirmModal = ({
@@ -22,6 +30,7 @@ export const ConfirmModal = ({
   message,
   cancelLabel = "キャンセル",
   confirmLabel = "OK",
+  variant = "primary",
   onCancel,
   onConfirm,
 }: Props) => {
@@ -119,7 +128,7 @@ export const ConfirmModal = ({
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 bg-[#9fe870] rounded-full px-6 py-3.5 text-[14px] font-semibold text-[#163300] cursor-pointer hover:bg-[#8edc5e] transition-colors"
+            className={`flex-1 rounded-full px-6 py-3.5 text-[14px] font-semibold cursor-pointer transition-colors ${CONFIRM_BUTTON_CLASS[variant]}`}
           >
             {confirmLabel}
           </button>

@@ -1,10 +1,10 @@
-import { DriversPage } from "@/app/admin/drivers/DriversPage";
+import { RecordsPage } from "@/app/admin/records/RecordsPage";
 import { AdminShellProvider } from "@/components/layout/NavigationDrawer";
 
-export default function AdminDriversPage() {
+export default function AdminRecordsPage() {
   return (
     <AdminShellProvider>
-      <DriversPage />
+      <RecordsPage />
     </AdminShellProvider>
   );
 }

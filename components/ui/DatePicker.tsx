@@ -13,6 +13,24 @@ type Props = {
   error?: boolean;
   startYear?: number;
   endYear?: number;
+  defaultMonth?: Date;
+  align?: "left" | "right";
+  disabledBefore?: Date;
+  disabledAfter?: Date;
+};
+
+const buildDisabledMatcher = (
+  before: Date | undefined,
+  after: Date | undefined,
+):
+  | { before: Date }
+  | { after: Date }
+  | { before: Date; after: Date }
+  | undefined => {
+  if (before !== undefined && after !== undefined) return { before, after };
+  if (before !== undefined) return { before };
+  if (after !== undefined) return { after };
+  return undefined;
 };
 
 const VALUE_FORMAT = "yyyy-MM-dd";
@@ -24,6 +42,17 @@ const parseValue = (value: string): Date | undefined => {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
+const resolveDefaultMonth = (
+  selected: Date | undefined,
+  fallback: Date | undefined,
+  endYear: number,
+): Date => selected ?? fallback ?? new Date(endYear - 30, 0);
+
+const ALIGN_CLASS: Record<"left" | "right", string> = {
+  left: "left-0",
+  right: "right-0",
+};
+
 export const DatePicker = ({
   value,
   onChange,
@@ -31,6 +60,10 @@ export const DatePicker = ({
   error,
   startYear = 1940,
   endYear = new Date().getFullYear(),
+  defaultMonth,
+  align = "left",
+  disabledBefore,
+  disabledAfter,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,6 +83,7 @@ export const DatePicker = ({
     selectedDate !== undefined ? format(selectedDate, DISPLAY_FORMAT) : "";
   const isPlaceholder = displayValue === "";
   const borderClass = error ? "border-[#e23b4a]" : "border-[#e8ebe5]";
+  const alignClass = ALIGN_CLASS[align];
 
   const handleSelect = (day: Date | undefined) => {
     if (day === undefined) {
@@ -79,7 +113,7 @@ export const DatePicker = ({
       {open ? (
         <div
           role="dialog"
-          className="absolute z-10 mt-2 bg-white border border-[#e8ebe6] rounded-[16px] p-2"
+          className={`absolute z-10 mt-2 ${alignClass} bg-white border border-[#e8ebe6] rounded-[16px] p-2`}
           style={
             {
               "--rdp-accent-color": "#163300",
@@ -95,7 +129,12 @@ export const DatePicker = ({
             captionLayout="dropdown"
             startMonth={new Date(startYear, 0)}
             endMonth={new Date(endYear, 11)}
-            defaultMonth={selectedDate ?? new Date(endYear - 30, 0)}
+            defaultMonth={resolveDefaultMonth(
+              selectedDate,
+              defaultMonth,
+              endYear,
+            )}
+            disabled={buildDisabledMatcher(disabledBefore, disabledAfter)}
             locale={ja}
             modifiers={{
               sunday: (date) => date.getDay() === 0,
