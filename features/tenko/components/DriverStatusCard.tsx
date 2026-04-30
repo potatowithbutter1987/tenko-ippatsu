@@ -38,12 +38,6 @@ const STATUS_TEXT: Record<TenkoOverallStatus, string> = {
   completed: "text-[#163300]",
 };
 
-const STATUS_ICON: Record<TenkoOverallStatus, string> = {
-  missing: "🟥",
-  warning: "🟡",
-  completed: "🟢",
-};
-
 const RESULT_COLOR: Record<CheckOutcome, string> = {
   ok: "text-[#163300]",
   ng: "text-[#e23b4a]",
@@ -99,9 +93,8 @@ export const DriverStatusCard = ({
   >
     <div className="flex gap-2 items-center w-full">
       <div
-        className={`flex gap-0.5 items-center pl-1.5 pr-2 py-0.5 rounded-full ${STATUS_BG[status]}`}
+        className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full ${STATUS_BG[status]}`}
       >
-        <span className="text-[10px] leading-none">{STATUS_ICON[status]}</span>
         <span className={`text-[11px] font-bold ${STATUS_TEXT[status]}`}>
           {STATUS_LABEL[status]}
         </span>

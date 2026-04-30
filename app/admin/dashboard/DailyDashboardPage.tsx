@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AdminAppBar } from "@/components/layout/AdminAppBar";
 import { useAdminShell } from "@/components/layout/NavigationDrawer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SearchResultCount } from "@/components/ui/SearchResultCount";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { DailyActionSheet } from "@/features/tenko/components/DailyActionSheet";
 import {
@@ -14,6 +15,7 @@ import {
   DailyFilterSheet,
   DEFAULT_DAILY_FILTER,
   type DailyFilterValue,
+  type DailyTenkoStatusFilter,
 } from "@/features/tenko/components/DailyFilterSheet";
 import {
   DriverStatusCard,
@@ -396,6 +398,15 @@ export const DailyDashboardPage = () => {
     }, 220);
   };
 
+  const handleJumpToToday = () => {
+    setDate(new Date());
+  };
+
+  const handleSummaryClick = (status: DailyTenkoStatusFilter) => {
+    setDate(new Date());
+    setFilter((prev) => ({ ...prev, status: [status] }));
+  };
+
   // TODO: 当日表示のとき 30 秒間隔で自動更新（Figma コメント由来）
 
   return (
@@ -415,12 +426,16 @@ export const DailyDashboardPage = () => {
                 icon="🚚"
                 label="本日の予定"
                 value={MOCK_SUMMARY.scheduled}
+                onClick={handleJumpToToday}
+                ariaLabel="本日の予定を表示"
               />
               <SummaryCard
                 icon="✅"
                 label="点呼完了"
                 value={MOCK_SUMMARY.completed}
                 valueColor="text-[#163300]"
+                onClick={() => handleSummaryClick("completed")}
+                ariaLabel="本日の点呼完了ドライバーで絞り込む"
               />
             </div>
             <div className="flex gap-2 w-full">
@@ -429,12 +444,16 @@ export const DailyDashboardPage = () => {
                 label="未点呼"
                 value={MOCK_SUMMARY.missing}
                 valueColor="text-[#e23b4a]"
+                onClick={() => handleSummaryClick("missing")}
+                ariaLabel="本日の未点呼ドライバーで絞り込む"
               />
               <SummaryCard
                 icon="⚠"
                 label="要確認"
                 value={MOCK_SUMMARY.warning}
                 valueColor="text-[#ec7e00]"
+                onClick={() => handleSummaryClick("warning")}
+                ariaLabel="本日の要確認ドライバーで絞り込む"
               />
             </div>
           </div>
@@ -444,7 +463,7 @@ export const DailyDashboardPage = () => {
           <DateNav
             date={date}
             onChange={setDate}
-            onJumpToToday={() => setDate(new Date())}
+            onJumpToToday={handleJumpToToday}
             isToday={isToday}
           />
           <Toolbar
@@ -454,7 +473,8 @@ export const DailyDashboardPage = () => {
           />
         </div>
 
-        <div className="w-full max-w-[765px] mx-auto px-4">
+        <div className="w-full max-w-[765px] mx-auto px-4 flex flex-col gap-3">
+          <SearchResultCount count={MOCK_DRIVERS.length} />
           <div className="flex flex-col gap-3 w-full">
             {MOCK_DRIVERS.map((driver) => (
               <DriverStatusCard
