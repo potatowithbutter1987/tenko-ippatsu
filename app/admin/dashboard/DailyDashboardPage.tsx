@@ -20,6 +20,17 @@ import {
   type DriverCheckSnapshot,
   type TenkoOverallStatus,
 } from "@/features/tenko/components/DriverStatusCard";
+import {
+  TenkoEditSheet,
+  type TenkoAfterEditValue,
+  type TenkoBeforeEditValue,
+  type TenkoEditPayload,
+} from "@/features/tenko/components/TenkoEditSheet";
+import {
+  TenkoResultSheet,
+  type TenkoSegmentDetail,
+  type TenkoSegmentKey,
+} from "@/features/tenko/components/TenkoResultSheet";
 
 type DriverEntry = {
   id: string;
@@ -96,6 +107,158 @@ const MOCK_DRIVERS: ReadonlyArray<DriverEntry> = [
 ];
 
 const INITIAL_DATE = new Date(2026, 3, 8);
+
+type DriverDetail = {
+  before: TenkoSegmentDetail | null;
+  after: TenkoSegmentDetail | null;
+  editLogs: ReadonlyArray<string>;
+};
+
+const MOCK_DETAILS_BY_ID: Record<string, DriverDetail> = {
+  "3": {
+    before: {
+      rows: [
+        { label: "実施時刻", value: "08:20" },
+        { label: "点呼実施者", value: "山田 管理者" },
+        { label: "点呼方法", value: "その他" },
+        { label: "免許証確認", value: "OK", isOk: true },
+        { label: "体調", value: "OK", isOk: true },
+        { label: "車両点検", value: "OK", isOk: true },
+        { label: "アルコール検知器使用", value: "使用" },
+        { label: "酒気帯び", value: "なし" },
+        { label: "検知数値", value: "0.00 mg/L" },
+        { label: "開始ODO", value: "123,456 km" },
+        { label: "車両", value: "品川 500 あ 12-34" },
+      ],
+      message:
+        "本日は首都高C1内回りで工事あり。迂回を推奨。バッテリー残量に注意。",
+    },
+    after: {
+      rows: [
+        { label: "実施時刻", value: "17:45" },
+        { label: "点呼実施者", value: "山田 管理者" },
+        { label: "点呼方法", value: "対面" },
+        { label: "アルコール検知器使用", value: "使用" },
+        { label: "酒気帯び", value: "なし" },
+        { label: "検知数値", value: "0.00 mg/L" },
+        { label: "終了ODO", value: "123,712 km" },
+        { label: "運行状況報告", value: "特になし" },
+        { label: "交替運転者通告", value: "特になし" },
+        { label: "休憩場所", value: "海老名SA" },
+        { label: "車両", value: "品川 500 あ 12-34" },
+      ],
+      message: "",
+    },
+    editLogs: [
+      "山田 管理者: アルコール検知数値を 0.00 に修正",
+      "山田 管理者: 伝達事項の内容を更新",
+    ],
+  },
+};
+
+const EMPTY_DETAIL: DriverDetail = {
+  before: null,
+  after: null,
+  editLogs: [],
+};
+
+type DriverEditValues = {
+  before: TenkoBeforeEditValue;
+  after: TenkoAfterEditValue;
+};
+
+const EMPTY_BEFORE: TenkoBeforeEditValue = {
+  time: "",
+  inspector: "",
+  method: "",
+  methodNote: "",
+  licenseConfirmed: false,
+  health: "",
+  vehicleCheck: "",
+  inspectionResult: {},
+  alcoholUsed: "",
+  alcoholStatus: "",
+  alcoholValue: "",
+  startOdo: "",
+  vehicleId: "",
+  message: "",
+};
+
+const EMPTY_AFTER: TenkoAfterEditValue = {
+  time: "",
+  inspector: "",
+  method: "",
+  methodNote: "",
+  alcoholUsed: "",
+  alcoholStatus: "",
+  alcoholValue: "",
+  endOdo: "",
+  statusReport: "",
+  statusReportNote: "",
+  handover: "",
+  handoverNote: "",
+  restLocation: "",
+  vehicleId: "",
+  message: "",
+};
+
+const EMPTY_EDIT_VALUES: DriverEditValues = {
+  before: EMPTY_BEFORE,
+  after: EMPTY_AFTER,
+};
+
+const MOCK_EDIT_VALUES_BY_ID: Record<string, DriverEditValues> = {
+  "3": {
+    before: {
+      time: "08:20",
+      inspector: "山田 管理者",
+      method: "other",
+      methodNote: "電話",
+      licenseConfirmed: true,
+      health: "yes",
+      vehicleCheck: "normal",
+      inspectionResult: {},
+      alcoholUsed: "used",
+      alcoholStatus: "normal",
+      alcoholValue: "0.00",
+      startOdo: "123456",
+      vehicleId: "vehicle-1",
+      message:
+        "本日は首都高C1内回りで工事あり。迂回を推奨。バッテリー残量に注意。",
+    },
+    after: {
+      time: "17:45",
+      inspector: "山田 管理者",
+      method: "facetoface",
+      methodNote: "",
+      alcoholUsed: "used",
+      alcoholStatus: "normal",
+      alcoholValue: "0.00",
+      endOdo: "123712",
+      statusReport: "none",
+      statusReportNote: "",
+      handover: "none",
+      handoverNote: "",
+      restLocation: "rest-2",
+      vehicleId: "vehicle-1",
+      message: "",
+    },
+  },
+};
+
+const findDriver = (id: string | null): DriverEntry | null =>
+  id === null ? null : (MOCK_DRIVERS.find((d) => d.id === id) ?? null);
+
+const findDetail = (id: string | null): DriverDetail =>
+  id === null ? EMPTY_DETAIL : (MOCK_DETAILS_BY_ID[id] ?? EMPTY_DETAIL);
+
+const findEditValues = (id: string | null): DriverEditValues =>
+  id === null
+    ? EMPTY_EDIT_VALUES
+    : (MOCK_EDIT_VALUES_BY_ID[id] ?? EMPTY_EDIT_VALUES);
+
+const buildSubtitle = (driver: DriverEntry | null): string | undefined =>
+  driver === null ? undefined : `${driver.driverName} ・ ${driver.affiliation}`;
 
 const DateNav = ({
   date,
@@ -189,8 +352,49 @@ export const DailyDashboardPage = () => {
   const [filter, setFilter] = useState<DailyFilterValue>(DEFAULT_DAILY_FILTER);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [resultOpen, setResultOpen] = useState(false);
+  const [resultSegment, setResultSegment] = useState<TenkoSegmentKey>("before");
+  const [editing, setEditing] = useState<{
+    driverId: string;
+    segment: TenkoSegmentKey;
+  } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
   const isToday = isSameDay(date, new Date());
   const filterCount = countActiveDailyFilters(filter);
+  const selectedDriver = findDriver(selectedDriverId);
+  const selectedDetail = findDetail(selectedDriverId);
+  const editingDriverId = editing === null ? null : editing.driverId;
+  const editingDriver = findDriver(editingDriverId);
+  const editingValues = findEditValues(editingDriverId);
+
+  const handleOpenDriver = (id: string) => {
+    setSelectedDriverId(id);
+    setResultSegment("before");
+    setResultOpen(true);
+  };
+
+  const handleEdit = (segment: TenkoSegmentKey) => {
+    if (selectedDriverId === null) return;
+    const driverId = selectedDriverId;
+    setResultOpen(false);
+    window.setTimeout(() => {
+      setEditing({ driverId, segment });
+      setEditOpen(true);
+    }, 220);
+  };
+
+  const handleSaveEdit = (payload: TenkoEditPayload) => {
+    if (editing === null) return;
+    // TODO: 編集内容のサーバ送信
+    console.log("save edit", editing.driverId, payload);
+    setEditOpen(false);
+    window.setTimeout(() => {
+      setResultSegment(payload.segment);
+      setResultOpen(true);
+    }, 220);
+  };
 
   // TODO: 当日表示のとき 30 秒間隔で自動更新（Figma コメント由来）
 
@@ -261,12 +465,48 @@ export const DailyDashboardPage = () => {
                 vehicleAffiliation={driver.vehicleAffiliation}
                 beforeCheck={driver.beforeCheck}
                 afterCheck={driver.afterCheck}
-                onClick={() => console.log("open driver detail", driver.id)}
+                onClick={() => handleOpenDriver(driver.id)}
               />
             ))}
           </div>
         </div>
       </div>
+
+      <BottomSheet
+        open={resultOpen}
+        onClose={() => setResultOpen(false)}
+        title="点呼結果"
+        subtitle={buildSubtitle(selectedDriver)}
+      >
+        {selectedDriver !== null ? (
+          <TenkoResultSheet
+            key={`${selectedDriver.id}-${resultSegment}`}
+            before={selectedDetail.before}
+            after={selectedDetail.after}
+            editLogs={selectedDetail.editLogs}
+            initialSegment={resultSegment}
+            onClose={() => setResultOpen(false)}
+            onEdit={handleEdit}
+          />
+        ) : null}
+      </BottomSheet>
+
+      <BottomSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="点呼結果を編集"
+        subtitle={buildSubtitle(editingDriver)}
+      >
+        {editing !== null ? (
+          <TenkoEditSheet
+            before={editingValues.before}
+            after={editingValues.after}
+            initialSegment={editing.segment}
+            onCancel={() => setEditOpen(false)}
+            onSave={handleSaveEdit}
+          />
+        ) : null}
+      </BottomSheet>
 
       <BottomSheet
         open={filterSheetOpen}
