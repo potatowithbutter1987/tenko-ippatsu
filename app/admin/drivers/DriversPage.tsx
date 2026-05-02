@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { AdminAppBar } from "@/components/layout/AdminAppBar";
 import { useAdminShell } from "@/components/layout/NavigationDrawer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { SearchResultCount } from "@/components/ui/SearchResultCount";
 import {
   AffiliationChangeSheet,
@@ -205,37 +204,6 @@ const Toolbar = ({
   </div>
 );
 
-type ConfirmAction = "stop" | "resume";
-
-type ConfirmTarget = {
-  driverId: string;
-  action: ConfirmAction;
-};
-
-type ConfirmContent = {
-  title: string;
-  buildMessage: (driverName: string) => string;
-  confirmLabel: string;
-  variant: "primary" | "danger";
-};
-
-const CONFIRM_CONTENT: Record<ConfirmAction, ConfirmContent> = {
-  stop: {
-    title: "ドライバーを停止",
-    buildMessage: (name) =>
-      `${name} さんを停止します。停止すると所属履歴が閉じられ、常用車両・案件がクリアされます。`,
-    confirmLabel: "停止する",
-    variant: "danger",
-  },
-  resume: {
-    title: "ドライバーを復帰",
-    buildMessage: (name) =>
-      `${name} さんを復帰します。所属会社・案件は編集画面から再設定してください。`,
-    confirmLabel: "復帰する",
-    variant: "primary",
-  },
-};
-
 type EditingSheetsProps = {
   driver: DriverEntry | null;
   editOpen: boolean;
@@ -271,6 +239,7 @@ const EditingSheets = ({
             projectId: driver.projectId,
             phone: driver.phone,
             email: driver.email,
+            active: driver.status === "active",
           }}
           onCancel={onEditClose}
           onSave={onSaveEdit}
@@ -304,7 +273,6 @@ export const DriversPage = () => {
     DEFAULT_DRIVERS_FILTER,
   );
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
-  const [confirm, setConfirm] = useState<ConfirmTarget | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -316,11 +284,6 @@ export const DriversPage = () => {
     () => MOCK_DRIVERS.filter((d) => matchesFilter(d, filter)),
     [filter],
   );
-
-  const confirmDriver =
-    confirm === null
-      ? null
-      : (MOCK_DRIVERS.find((d) => d.id === confirm.driverId) ?? null);
 
   const handleCopyInvite = () => {
     // TODO: 招待リンク生成 + クリップボードコピー
@@ -369,30 +332,6 @@ export const DriversPage = () => {
     console.log("save affiliation change", editingDriverId, next);
     setAffiliationChangeOpen(false);
     window.setTimeout(() => setEditOpen(true), 220);
-  };
-
-  const handleStop = (id: string) => {
-    setConfirm({ driverId: id, action: "stop" });
-  };
-
-  const handleResume = (id: string) => {
-    setConfirm({ driverId: id, action: "resume" });
-  };
-
-  const handleConfirmCancel = () => {
-    setConfirm(null);
-  };
-
-  const handleConfirmExecute = () => {
-    if (confirm === null) return;
-    // TODO: status 更新 API（spec §5.6 の停止/復帰トランザクション）
-    console.log("execute", confirm);
-    setConfirm(null);
-  };
-
-  const handleCardClick = (id: string) => {
-    // TODO: ドライバー詳細表示
-    console.log("open driver", id);
   };
 
   return (
@@ -444,10 +383,7 @@ export const DriversPage = () => {
                   vehicle={driver.vehicle}
                   project={driver.project}
                   phone={driver.phone}
-                  onClick={() => handleCardClick(driver.id)}
-                  onEdit={() => handleEdit(driver.id)}
-                  onStop={() => handleStop(driver.id)}
-                  onResume={() => handleResume(driver.id)}
+                  onClick={() => handleEdit(driver.id)}
                 />
               ))
             )}
@@ -479,20 +415,6 @@ export const DriversPage = () => {
           }}
         />
       </BottomSheet>
-
-      {confirm !== null && confirmDriver !== null ? (
-        <ConfirmModal
-          open
-          title={CONFIRM_CONTENT[confirm.action].title}
-          message={CONFIRM_CONTENT[confirm.action].buildMessage(
-            confirmDriver.driverName,
-          )}
-          confirmLabel={CONFIRM_CONTENT[confirm.action].confirmLabel}
-          variant={CONFIRM_CONTENT[confirm.action].variant}
-          onCancel={handleConfirmCancel}
-          onConfirm={handleConfirmExecute}
-        />
-      ) : null}
     </div>
   );
 };

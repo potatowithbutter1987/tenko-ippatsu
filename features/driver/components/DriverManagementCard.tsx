@@ -12,10 +12,7 @@ type Props = {
   vehicle: string;
   project: string;
   phone: string;
-  onClick?: () => void;
-  onEdit: () => void;
-  onStop: () => void;
-  onResume: () => void;
+  onClick: () => void;
 };
 
 const STATUS_LABEL: Record<DriverManagementStatus, string> = {
@@ -64,16 +61,13 @@ export const DriverManagementCard = ({
   project,
   phone,
   onClick,
-  onEdit,
-  onStop,
-  onResume,
 }: Props) => (
-  <div className="bg-white rounded-[14px] flex flex-col gap-2 px-3.5 py-3 w-full leading-[normal]">
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex gap-2 items-center w-full text-left cursor-pointer hover:bg-[#fafafa] rounded transition-colors -mx-1 px-1"
-    >
+  <button
+    type="button"
+    onClick={onClick}
+    className="bg-white rounded-[14px] flex flex-col gap-2 px-3.5 py-3 w-full text-left leading-[normal] cursor-pointer hover:bg-[#fafafa] transition-colors"
+  >
+    <div className="flex gap-2 items-center w-full">
       <div
         className={`shrink-0 inline-flex items-center gap-[3px] pl-[7px] pr-2 py-0.5 rounded-full ${STATUS_BG[status]}`}
       >
@@ -93,7 +87,7 @@ export const DriverManagementCard = ({
         ) : null}
       </div>
       <span className="shrink-0 text-[20px] font-normal text-[#868685]">›</span>
-    </button>
+    </div>
 
     <div className="flex gap-1.5 items-center w-full text-[11px] whitespace-nowrap">
       <span className="font-bold text-[#868685]">
@@ -108,34 +102,5 @@ export const DriverManagementCard = ({
       <DetailRow label="案件" value={project} />
       <DetailRow label="電話" value={phone} />
     </div>
-
-    <div className="flex gap-2 justify-end items-start w-full">
-      {status === "retired" ? (
-        <button
-          type="button"
-          onClick={onResume}
-          className="bg-[#57bf3d] rounded-full flex items-center justify-center px-4 py-2 text-[12px] font-bold text-white cursor-pointer hover:bg-[#4ba834] transition-colors"
-        >
-          復帰
-        </button>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={onEdit}
-            className="bg-white border border-[#e8ebe6] rounded-full flex items-center justify-center px-4 py-2 text-[12px] font-bold text-[#0e0f0c] cursor-pointer hover:bg-[#f7f7f5] transition-colors"
-          >
-            編集
-          </button>
-          <button
-            type="button"
-            onClick={onStop}
-            className="bg-[#e33b3d] rounded-full flex items-center justify-center px-4 py-2 text-[12px] font-bold text-white cursor-pointer hover:bg-[#d12f31] transition-colors"
-          >
-            停止
-          </button>
-        </>
-      )}
-    </div>
-  </div>
+  </button>
 );
