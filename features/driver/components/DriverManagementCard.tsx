@@ -33,12 +33,6 @@ const STATUS_TEXT: Record<DriverManagementStatus, string> = {
   retired: "text-[#e23b4a]",
 };
 
-const STATUS_ICON: Record<DriverManagementStatus, string> = {
-  active: "🟢",
-  pending: "🟡",
-  retired: "🔴",
-};
-
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
   <div className="flex gap-2 items-center w-full">
     <span className="w-[60px] shrink-0 text-[10px] font-normal text-[#868685]">
@@ -71,7 +65,6 @@ export const DriverManagementCard = ({
       <div
         className={`shrink-0 inline-flex items-center gap-[3px] pl-[7px] pr-2 py-0.5 rounded-full ${STATUS_BG[status]}`}
       >
-        <span className="text-[10px] text-black">{STATUS_ICON[status]}</span>
         <span className={`text-[11px] font-bold ${STATUS_TEXT[status]}`}>
           {STATUS_LABEL[status]}
         </span>
