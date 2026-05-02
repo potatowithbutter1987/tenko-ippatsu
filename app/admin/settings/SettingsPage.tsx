@@ -4,10 +4,17 @@ import { useState } from "react";
 
 import { AdminAppBar } from "@/components/layout/AdminAppBar";
 import { useAdminShell } from "@/components/layout/NavigationDrawer";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { PillSegmentedToggle } from "@/components/ui/PillSegmentedToggle";
+import { ProjectActionSheet } from "@/features/project/components/ProjectActionSheet";
 import {
   ProjectCard,
   type ProjectType,
 } from "@/features/project/components/ProjectCard";
+import {
+  ProjectEditSheet,
+  type ProjectEditValue,
+} from "@/features/project/components/ProjectEditSheet";
 
 type SettingsTab = "projects" | "companies" | "vehicles" | "admins";
 
@@ -72,33 +79,6 @@ const MOCK_PROJECTS: ReadonlyArray<ProjectEntry> = [
   },
 ];
 
-const SettingsTabs = ({
-  active,
-  onChange,
-}: {
-  active: SettingsTab;
-  onChange: (next: SettingsTab) => void;
-}) => (
-  <div className="flex flex-wrap gap-2 w-full leading-[normal]">
-    {TABS.map((t) => {
-      const isActive = active === t.value;
-      const stateClass = isActive
-        ? "bg-[#9fe870] text-[#163300] font-semibold"
-        : "bg-white border border-[#e8ebe6] text-[#868685] font-medium hover:bg-[#f7f7f5]";
-      return (
-        <button
-          key={t.value}
-          type="button"
-          onClick={() => onChange(t.value)}
-          className={`rounded-full px-4 py-2 text-[12px] cursor-pointer transition-colors ${stateClass}`}
-        >
-          {t.label}
-        </button>
-      );
-    })}
-  </div>
-);
-
 const ActionRow = ({
   primaryLabel,
   onPrimaryClick,
@@ -109,7 +89,7 @@ const ActionRow = ({
   onActionClick: () => void;
 }) => (
   <div className="bg-white w-full leading-[normal]">
-    <div className="flex gap-3 items-center px-4 py-2.5 w-full">
+    <div className="max-w-[765px] mx-auto flex gap-3 items-center px-4 py-2.5 w-full">
       <button
         type="button"
         onClick={onPrimaryClick}
@@ -130,26 +110,119 @@ const ActionRow = ({
 );
 
 const PlaceholderTab = ({ label }: { label: string }) => (
-  <div className="px-4 py-12 text-center text-[14px] text-[#868685]">
+  <div className="w-full max-w-[765px] mx-auto px-4 py-12 text-center text-[14px] text-[#868685]">
     {label} は未実装です
   </div>
 );
 
+const MOCK_COMPANIES: ReadonlyArray<{ id: string; name: string }> = [
+  { id: "homy", name: "HOMY EXPRESS" },
+  { id: "self", name: "自社" },
+  { id: "abc", name: "ABC運送" },
+  { id: "tohoku", name: "東北運送" },
+  { id: "b-unsou", name: "B運送" },
+];
+
+const DEFAULT_CONTRACT_COMPANY_ID = MOCK_COMPANIES[0].id;
+
+const padTime = (t: string): string => {
+  const [h, m] = t.split(":");
+  return `${(h ?? "00").padStart(2, "0")}:${(m ?? "00").padStart(2, "0")}`;
+};
+
+const buildEditInitial = (p: ProjectEntry): ProjectEditValue => ({
+  name: p.name,
+  type: p.type,
+  contractCompanyId: DEFAULT_CONTRACT_COMPANY_ID,
+  startTime: padTime(p.startTime),
+  endTime: padTime(p.endTime),
+  pickupLocation: p.pickupLocation,
+  deliveryLocation: p.deliveryLocation,
+  restLocations: [""],
+  active: true,
+});
+
+const buildCreateInitial = (): ProjectEditValue => ({
+  name: "",
+  type: "regular",
+  contractCompanyId: DEFAULT_CONTRACT_COMPANY_ID,
+  startTime: "",
+  endTime: "",
+  pickupLocation: "",
+  deliveryLocation: "",
+  restLocations: [""],
+  active: true,
+});
+
+type ProjectSheetState =
+  | { mode: "edit"; projectId: string }
+  | { mode: "create" };
+
+const findEditingProject = (
+  state: ProjectSheetState | null,
+): ProjectEntry | null => {
+  if (state === null || state.mode !== "edit") return null;
+  return MOCK_PROJECTS.find((p) => p.id === state.projectId) ?? null;
+};
+
+const resolveSheetTitle = (state: ProjectSheetState | null): string =>
+  state?.mode === "create" ? "案件新規追加" : "案件編集";
+
+const resolveSheetKey = (state: ProjectSheetState | null): string => {
+  if (state === null) return "";
+  if (state.mode === "create") return "create";
+  return `edit-${state.projectId}`;
+};
+
+const resolveSheetInitial = (
+  state: ProjectSheetState | null,
+  editingProject: ProjectEntry | null,
+): ProjectEditValue | null => {
+  if (state === null) return null;
+  if (state.mode === "create") return buildCreateInitial();
+  if (editingProject === null) return null;
+  return buildEditInitial(editingProject);
+};
+
 export const SettingsPage = () => {
   const { openDrawer } = useAdminShell();
   const [activeTab, setActiveTab] = useState<SettingsTab>("projects");
+  const [sheetState, setSheetState] = useState<ProjectSheetState | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const editingProject = findEditingProject(sheetState);
+  const sheetTitle = resolveSheetTitle(sheetState);
+  const sheetInitial = resolveSheetInitial(sheetState, editingProject);
+  const sheetKey = resolveSheetKey(sheetState);
 
   const handleProjectClick = (id: string) => {
-    // TODO: 案件編集シート
-    console.log("edit project", id);
+    setSheetState({ mode: "edit", projectId: id });
+    setSheetOpen(true);
   };
+  const handleSheetClose = () => setSheetOpen(false);
+  const handleSheetSave = (next: ProjectEditValue) => {
+    // TODO: 案件作成・更新 API
+    console.log("save project", sheetState, next);
+    setSheetOpen(false);
+  };
+
   const handleAddProject = () => {
-    // TODO: 案件追加シート
-    console.log("add project");
+    setSheetState({ mode: "create" });
+    setSheetOpen(true);
   };
-  const handleActionClick = () => {
-    // TODO: 操作ボトムシート
-    console.log("open action");
+
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const handleActionClick = () => setActionSheetOpen(true);
+  const handleActionClose = () => setActionSheetOpen(false);
+  const handleCsvImport = () => {
+    // TODO: CSV登録 API
+    console.log("csv import");
+    setActionSheetOpen(false);
+  };
+  const handleCsvExport = () => {
+    // TODO: CSV出力 API
+    console.log("csv export");
+    setActionSheetOpen(false);
   };
 
   return (
@@ -162,8 +235,12 @@ export const SettingsPage = () => {
       />
 
       <div className="flex flex-col w-full">
-        <div className="px-4 pt-4 pb-3 w-full">
-          <SettingsTabs active={activeTab} onChange={setActiveTab} />
+        <div className="w-full max-w-[765px] mx-auto px-4 pt-4 pb-3">
+          <PillSegmentedToggle
+            value={activeTab}
+            onChange={setActiveTab}
+            options={TABS}
+          />
         </div>
         <ActionRow
           primaryLabel="＋ 案件追加"
@@ -172,7 +249,7 @@ export const SettingsPage = () => {
         />
 
         {activeTab === "projects" ? (
-          <div className="flex flex-col gap-3 px-4 py-4 w-full">
+          <div className="w-full max-w-[765px] mx-auto flex flex-col gap-3 px-4 py-4">
             {MOCK_PROJECTS.map((p) => (
               <ProjectCard
                 key={p.id}
@@ -193,6 +270,34 @@ export const SettingsPage = () => {
           />
         )}
       </div>
+
+      <BottomSheet
+        open={sheetOpen}
+        onClose={handleSheetClose}
+        title={sheetTitle}
+      >
+        {sheetState !== null && sheetInitial !== null ? (
+          <ProjectEditSheet
+            key={sheetKey}
+            mode={sheetState.mode}
+            initialValue={sheetInitial}
+            companies={MOCK_COMPANIES}
+            onCancel={handleSheetClose}
+            onSave={handleSheetSave}
+          />
+        ) : null}
+      </BottomSheet>
+
+      <BottomSheet
+        open={actionSheetOpen}
+        onClose={handleActionClose}
+        title="案件・現場操作"
+      >
+        <ProjectActionSheet
+          onCsvImport={handleCsvImport}
+          onCsvExport={handleCsvExport}
+        />
+      </BottomSheet>
     </div>
   );
 };

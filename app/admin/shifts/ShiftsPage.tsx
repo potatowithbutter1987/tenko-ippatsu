@@ -461,7 +461,7 @@ const MonthNav = ({
   isAtMaxMonth: boolean;
 }) => (
   <div className="bg-white border-y border-[#e8ebe6] w-full">
-    <div className="flex items-center justify-between px-4 py-2.5">
+    <div className="max-w-[765px] mx-auto flex items-center justify-between px-4 py-2.5">
       <button
         type="button"
         onClick={onPrevMonth}
@@ -517,7 +517,7 @@ const Toolbar = ({
   onActionClick: () => void;
 }) => (
   <div className="bg-white border-b border-[#e8ebe6] w-full leading-[normal]">
-    <div className="flex gap-2 items-center px-4 py-2.5">
+    <div className="max-w-[765px] mx-auto flex gap-2 items-center px-4 py-2.5">
       <button
         type="button"
         onClick={onFilterClick}
