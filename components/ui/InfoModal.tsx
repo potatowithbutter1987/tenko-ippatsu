@@ -9,7 +9,7 @@ const TRANSITION_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
 type Props = {
   open: boolean;
   title?: string;
-  message: string;
+  message: React.ReactNode;
   buttonLabel?: string;
   onClose: () => void;
   onConfirm?: () => void;
@@ -105,7 +105,9 @@ export const InfoModal = ({
           </button>
         </div>
         <div className="h-px bg-[#e8ebe5] w-full" />
-        <p className="text-[15px] leading-6 text-[#0e0f0c]">{message}</p>
+        <div className="text-[15px] leading-6 text-[#0e0f0c] w-full">
+          {message}
+        </div>
         <button
           type="button"
           onClick={handleConfirm}
